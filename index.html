@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A simple progressive web app for reading RSS feeds">
+    <meta name="theme-color" content="#2196F3">
+    
+    <title>Rat Reader</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <h1 class="logo">🐀 Rat Reader</h1>
+                <nav class="nav">
+                    <div id="user-menu" class="user-menu hidden">
+                        <span id="username" class="username"></span>
+                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                    </div>
+                    <div id="auth-buttons" class="auth-buttons">
+                        <button id="login-btn" class="btn btn-primary">Login</button>
+                        <button id="register-btn" class="btn btn-secondary">Register</button>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Login/Register Modal -->
+            <div id="auth-modal" class="modal hidden">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <div id="login-form" class="auth-form">
+                        <h2>Login</h2>
+                        <form>
+                            <input type="email" id="login-email" placeholder="Email" required>
+                            <input type="password" id="login-password" placeholder="Password" required>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+                        <p>Don't have an account? <a href="#" id="show-register">Register here</a></p>
+                    </div>
+                    
+                    <div id="register-form" class="auth-form hidden">
+                        <h2>Register</h2>
+                        <form>
+                            <input type="text" id="register-name" placeholder="Full Name" required>
+                            <input type="email" id="register-email" placeholder="Email" required>
+                            <input type="password" id="register-password" placeholder="Password" required>
+                            <input type="password" id="register-confirm" placeholder="Confirm Password" required>
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </form>
+                        <p>Already have an account? <a href="#" id="show-login">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Screen (shown when not logged in) -->
+            <div id="welcome-screen" class="welcome-screen">
+                <div class="container">
+                    <div class="welcome-content">
+                        <h2>Welcome to Rat Reader</h2>
+                        <p>Stay up to date with your favorite websites and blogs. Sign in to manage your RSS feeds and read articles offline.</p>
+                        <div class="welcome-actions">
+                            <button class="btn btn-primary btn-large" onclick="showAuthModal('login')">Get Started</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard (shown when logged in) -->
+            <div id="dashboard" class="dashboard hidden">
+                <div class="container">
+                    <!-- Feed Management Section -->
+                    <section class="feed-management">
+                        <div class="section-header">
+                            <h2>Your RSS Feeds</h2>
+                            <button id="add-feed-btn" class="btn btn-primary">+ Add Feed</button>
+                        </div>
+                        
+                        <!-- Add Feed Form -->
+                        <div id="add-feed-form" class="add-feed-form hidden">
+                            <form>
+                                <input type="url" id="feed-url" placeholder="RSS Feed URL" required>
+                                <input type="text" id="feed-name" placeholder="Feed Name (optional)">
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Add Feed</button>
+                                    <button type="button" id="cancel-add-feed" class="btn btn-secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Feed List -->
+                        <div id="feed-list" class="feed-list">
+                            <!-- Feeds will be populated here -->
+                        </div>
+                    </section>
+
+                    <!-- Articles Section -->
+                    <section class="articles-section">
+                        <div class="section-header">
+                            <h2>Latest Articles</h2>
+                            <div class="feed-filter">
+                                <select id="feed-filter">
+                                    <option value="all">All Feeds</option>
+                                    <!-- Feed options will be populated here -->
+                                </select>
+                                <button id="refresh-feeds" class="btn btn-secondary">🔄 Refresh</button>
+                            </div>
+                        </div>
+
+                        <!-- Articles List -->
+                        <div id="articles-list" class="articles-list">
+                            <!-- Articles will be populated here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
