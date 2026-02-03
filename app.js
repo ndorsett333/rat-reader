@@ -34,10 +34,24 @@ class RatReader {
         // Logout
         document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());
         
+        // Hamburger menu and sidebar
+        document.getElementById('hamburger-menu').addEventListener('click', () => this.toggleSidebar());
+        document.getElementById('close-sidebar').addEventListener('click', () => this.closeSidebar());
+        document.getElementById('add-feed-btn').addEventListener('click', () => this.showAddFeedModal());
+        document.getElementById('close-feed-modal').addEventListener('click', () => this.hideAddFeedModal());
+        document.getElementById('cancel-add-feed').addEventListener('click', () => this.hideAddFeedModal());
+        document.getElementById('add-feed-form').addEventListener('submit', (e) => this.handleAddFeed(e));
+        
         // Close modal when clicking outside
         document.getElementById('auth-modal').addEventListener('click', (e) => {
             if (e.target.id === 'auth-modal') {
                 this.hideAuthModal();
+            }
+        });
+        
+        document.getElementById('add-feed-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'add-feed-modal') {
+                this.hideAddFeedModal();
             }
         });
     }
@@ -182,6 +196,9 @@ class RatReader {
         this.currentUser = null;
         localStorage.removeItem('ratreader_token');
         
+        // Close sidebar when logging out
+        this.closeSidebar();
+        
         this.updateUIForLoggedOutUser();
         this.showSuccess('Logged out successfully');
     }
@@ -261,6 +278,90 @@ class RatReader {
         setTimeout(() => {
             notification.remove();
         }, 5000);
+    }
+
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const hamburger = document.getElementById('hamburger-menu');
+        const overlay = this.getOrCreateSidebarOverlay();
+        
+        if (sidebar.classList.contains('open')) {
+            this.closeSidebar();
+        } else {
+            sidebar.classList.add('open');
+            hamburger.classList.add('active');
+            overlay.classList.add('active');
+            
+            // Close sidebar when clicking overlay
+            overlay.onclick = () => this.closeSidebar();
+        }
+    }
+    
+    closeSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const hamburger = document.getElementById('hamburger-menu');
+        const overlay = document.querySelector('.sidebar-overlay');
+        
+        sidebar.classList.remove('open');
+        hamburger.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+    }
+    
+    getOrCreateSidebarOverlay() {
+        let overlay = document.querySelector('.sidebar-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+        }
+        return overlay;
+    }
+    
+    showAddFeedModal() {
+        this.closeSidebar();
+        document.getElementById('add-feed-modal').classList.remove('hidden');
+    }
+    
+    hideAddFeedModal() {
+        document.getElementById('add-feed-modal').classList.add('hidden');
+        document.getElementById('add-feed-form').reset();
+    }
+    
+    async handleAddFeed(e) {
+        e.preventDefault();
+        
+        const url = document.getElementById('feed-url').value;
+        const name = document.getElementById('feed-name').value;
+        
+        try {
+            this.showLoading(true);
+            
+            const response = await fetch(`${this.apiUrl}/api.php/feeds`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                    url: url,
+                    name: name || null
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.hideAddFeedModal();
+                this.showSuccess('RSS feed added successfully!');
+                // TODO: Refresh feed list
+            } else {
+                this.showError(data.error || 'Failed to add feed');
+            }
+        } catch (error) {
+            this.showError('Network error. Please try again.');
+        } finally {
+            this.showLoading(false);
+        }
     }
 }
 

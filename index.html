@@ -27,7 +27,11 @@
                 <nav class="nav">
                     <div id="user-menu" class="user-menu hidden">
                         <span id="username" class="username"></span>
-                        <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                        <button id="hamburger-menu" class="hamburger-menu">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
                     </div>
                     <div id="auth-buttons" class="auth-buttons">
                         <button id="login-btn" class="btn btn-primary">Login</button>
@@ -86,19 +90,6 @@
                     <section class="feed-management">
                         <div class="section-header">
                             <h2>Your RSS Feeds</h2>
-                            <button id="add-feed-btn" class="btn btn-primary">+ Add Feed</button>
-                        </div>
-                        
-                        <!-- Add Feed Form -->
-                        <div id="add-feed-form" class="add-feed-form hidden">
-                            <form>
-                                <input type="url" id="feed-url" placeholder="RSS Feed URL" required>
-                                <input type="text" id="feed-name" placeholder="Feed Name (optional)">
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary">Add Feed</button>
-                                    <button type="button" id="cancel-add-feed" class="btn btn-secondary">Cancel</button>
-                                </div>
-                            </form>
                         </div>
 
                         <!-- Feed List -->
@@ -128,6 +119,52 @@
                 </div>
             </div>
         </main>
+
+        <!-- Sidebar Panel -->
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>Menu</h3>
+                <button id="close-sidebar" class="close-sidebar">&times;</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-menu-items">
+                    <button id="add-feed-btn" class="sidebar-btn">
+                        <span class="icon">📰</span>
+                        Add RSS Feed
+                    </button>
+                    <button id="manage-feeds-btn" class="sidebar-btn">
+                        <span class="icon">⚙️</span>
+                        Manage Feeds
+                    </button>
+                    <button id="settings-btn" class="sidebar-btn">
+                        <span class="icon">🔧</span>
+                        Settings
+                    </button>
+                </div>
+                <div class="sidebar-bottom">
+                    <button id="logout-btn" class="sidebar-btn sidebar-logout">
+                        <span class="icon">🚪</span>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Feed Modal -->
+        <div id="add-feed-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close" id="close-feed-modal">&times;</span>
+                <h2>Add RSS Feed</h2>
+                <form id="add-feed-form">
+                    <input type="url" id="feed-url" placeholder="RSS Feed URL" required>
+                    <input type="text" id="feed-name" placeholder="Feed Name (optional)">
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Feed</button>
+                        <button type="button" id="cancel-add-feed" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Loading Indicator -->
         <div id="loading" class="loading hidden">
