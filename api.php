@@ -62,23 +62,23 @@ class RatReaderAPI {
     private function register() {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($data['name']) || !isset($data['email']) || !isset($data['password'])) {
+        if (!isset($data['username']) || !isset($data['password'])) {
             $this->sendResponse(['error' => 'Missing required fields'], 400);
             return;
         }
         
-        // Check if email already exists
-        $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$data['email']]);
+        // Check if username already exists
+        $stmt = $this->db->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->execute([$data['username']]);
         if ($stmt->fetch()) {
-            $this->sendResponse(['error' => 'Email already registered'], 400);
+            $this->sendResponse(['error' => 'Username already taken'], 400);
             return;
         }
         
         // Create user
         $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
-        $stmt = $this->db->prepare("INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)");
-        $stmt->execute([$data['name'], $data['email'], $passwordHash]);
+        $stmt = $this->db->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
+        $stmt->execute([$data['username'], $passwordHash]);
         
         $userId = $this->db->lastInsertId();
         $token = $this->createSession($userId);
@@ -87,8 +87,7 @@ class RatReaderAPI {
             'success' => true,
             'user' => [
                 'id' => $userId,
-                'name' => $data['name'],
-                'email' => $data['email']
+                'username' => $data['username']
             ],
             'token' => $token
         ]);
@@ -97,13 +96,13 @@ class RatReaderAPI {
     private function login() {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($data['email']) || !isset($data['password'])) {
-            $this->sendResponse(['error' => 'Missing email or password'], 400);
+        if (!isset($data['username']) || !isset($data['password'])) {
+            $this->sendResponse(['error' => 'Missing username or password'], 400);
             return;
         }
         
-        $stmt = $this->db->prepare("SELECT id, name, email, password_hash FROM users WHERE email = ?");
-        $stmt->execute([$data['email']]);
+        $stmt = $this->db->prepare("SELECT id, username, password_hash FROM users WHERE username = ?");
+        $stmt->execute([$data['username']]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$user || !password_verify($data['password'], $user['password_hash'])) {
@@ -117,8 +116,7 @@ class RatReaderAPI {
             'success' => true,
             'user' => [
                 'id' => $user['id'],
-                'name' => $user['name'],
-                'email' => $user['email']
+                'username' => $user['username']
             ],
             'token' => $token
         ]);

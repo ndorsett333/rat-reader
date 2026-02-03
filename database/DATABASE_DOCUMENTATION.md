@@ -11,8 +11,7 @@ Stores user account information for registration and authentication.
 
 **Columns:**
 - `id` (INT, Primary Key, Auto Increment) - Unique user identifier
-- `name` (VARCHAR 100) - User's full name
-- `email` (VARCHAR 255, Unique) - User's email address (used for login)
+- `username` (VARCHAR 50, Unique) - User's chosen username (used for login)
 - `password_hash` (VARCHAR 255) - Encrypted password using PHP password_hash()
 - `created_at` (TIMESTAMP) - When the account was created
 - `updated_at` (TIMESTAMP) - When the account was last modified

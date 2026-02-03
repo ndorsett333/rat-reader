@@ -27,13 +27,11 @@ try {
             echo "</ul>\n";
         }
         
-        // Test basic query - Fixed SQL syntax
-        $stmt = $connection->prepare("SELECT NOW() as server_time");
+        // Test basic query
+        $stmt = $connection->prepare("SELECT NOW() as current_time");
         $stmt->execute();
         $result = $stmt->fetch();
-        echo "<p>Current server time: " . $result['server_time'] . "</p>\n";
-        
-        echo "<p style='color: green;'>🎉 Database setup is complete and working!</p>\n";
+        echo "<p>Current server time: " . $result['current_time'] . "</p>\n";
         
     } else {
         echo "<p style='color: red;'>❌ Failed to connect to database</p>\n";
