@@ -51,6 +51,9 @@ class RatReaderAPI {
                 case 'refresh':
                     if ($method === 'POST') return $this->refreshFeeds();
                     break;
+                case 'live-articles':
+                    if ($method === 'GET') return $this->getLiveArticles();
+                    break;
                 default:
                     $this->sendResponse(['error' => 'Endpoint not found'], 404);
             }
@@ -210,6 +213,75 @@ class RatReaderAPI {
         $this->sendResponse(['success' => true, 'refreshed' => $refreshedCount]);
     }
     
+    private function getLiveArticles() {
+        $userId = $this->authenticateRequest();
+        if (!$userId) return;
+        
+        // Get user's active feeds
+        $stmt = $this->db->prepare("SELECT id, name, url FROM feeds WHERE user_id = ? AND is_active = 1");
+        $stmt->execute([$userId]);
+        $feeds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $allArticles = [];
+        
+        foreach ($feeds as $feed) {
+            $articles = $this->fetchLiveArticles($feed['url'], $feed['name']);
+            if ($articles) {
+                $allArticles = array_merge($allArticles, $articles);
+            }
+        }
+        
+        // Sort by publication date (newest first)
+        usort($allArticles, function($a, $b) {
+            return strtotime($b['pub_date']) - strtotime($a['pub_date']);
+        });
+        
+        // Limit to 50 most recent articles
+        $allArticles = array_slice($allArticles, 0, 50);
+        
+        $this->sendResponse(['articles' => $allArticles]);
+    }
+    
+    private function fetchLiveArticles($url, $feedName) {
+        $content = @file_get_contents($url);
+        if (!$content) return false;
+        
+        $xml = simplexml_load_string($content);
+        if (!$xml) return false;
+        
+        $articles = [];
+        $items = $xml->channel->item ?? $xml->entry ?? [];
+        
+        foreach ($items as $item) {
+            $title = (string)($item->title ?? '');
+            
+            // Try to get full content first, fall back to description
+            $description = '';
+            if (isset($item->children('http://purl.org/rss/1.0/modules/content/')->encoded)) {
+                $description = (string)$item->children('http://purl.org/rss/1.0/modules/content/')->encoded;
+            } elseif (isset($item->description)) {
+                $description = (string)$item->description;
+            } elseif (isset($item->summary)) {
+                $description = (string)$item->summary;
+            }
+            
+            $link = (string)($item->link ?? $item->id ?? '');
+            $pubDate = (string)($item->pubDate ?? $item->published ?? '');
+            
+            if (!$title || !$link) continue;
+            
+            $articles[] = [
+                'title' => $title,
+                'description' => $description,
+                'link' => $link,
+                'pub_date' => $pubDate,
+                'feed_name' => $feedName
+            ];
+        }
+        
+        return $articles;
+    }
+
     private function createSession($userId) {
         $token = bin2hex(random_bytes(32));
         $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));

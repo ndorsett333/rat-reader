@@ -42,6 +42,9 @@ class RatReader {
         document.getElementById('cancel-add-feed').addEventListener('click', () => this.hideAddFeedModal());
         document.getElementById('add-feed-form').addEventListener('submit', (e) => this.handleAddFeed(e));
         
+        // Refresh functionality
+        document.getElementById('refresh-feeds').addEventListener('click', () => this.loadLiveArticles());
+        
         // Close modal when clicking outside
         document.getElementById('auth-modal').addEventListener('click', (e) => {
             if (e.target.id === 'auth-modal') {
@@ -221,6 +224,9 @@ class RatReader {
         if (this.currentUser) {
             document.getElementById('username').textContent = this.currentUser.username;
         }
+        
+        // Load live articles when dashboard is shown
+        this.loadLiveArticles();
     }
     
     updateUIForLoggedOutUser() {
@@ -230,6 +236,96 @@ class RatReader {
         document.getElementById('user-menu').classList.add('hidden');
     }
     
+    async loadLiveArticles() {
+        try {
+            this.showLoading(true);
+            
+            const response = await fetch(`${this.apiUrl}/api.php/live-articles`, {
+                headers: {
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.articles) {
+                this.displayArticles(data.articles);
+            } else {
+                this.showEmptyArticlesState();
+            }
+        } catch (error) {
+            console.error('Error loading live articles:', error);
+            this.showEmptyArticlesState();
+        } finally {
+            this.showLoading(false);
+        }
+    }
+    
+    displayArticles(articles) {
+        const articlesList = document.getElementById('articles-list');
+        
+        if (!articles || articles.length === 0) {
+            this.showEmptyArticlesState();
+            return;
+        }
+        
+        articlesList.innerHTML = articles.map((article, index) => {
+            const date = new Date(article.pub_date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Clean the description for the card display too
+            const cleanDescription = this.cleanArticleContent(article.description);
+            
+            return `
+                <article class="article-item" data-index="${index}">
+                    <div class="article-meta">
+                        <span class="article-source">${this.escapeHtml(article.feed_name || 'Unknown Source')}</span>
+                        <span class="article-date">${date}</span>
+                    </div>
+                    <h3 class="article-title">${this.escapeHtml(article.title)}</h3>
+                    ${cleanDescription ? `<p class="article-description">${cleanDescription}</p>` : ''}
+                    <div class="article-actions">
+                        <button class="btn btn-primary article-read-btn" data-action="read-more" data-index="${index}">Read more</button>
+                        <button class="btn btn-secondary article-link-btn" onclick="window.open('${article.link}', '_blank')">Go to article</button>
+                    </div>
+                </article>
+            `;
+        }).join('');
+        
+        // Store articles data for modal access
+        this.currentArticles = articles;
+        
+        // Add event listeners to read more buttons
+        document.querySelectorAll('[data-action="read-more"]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                const article = this.currentArticles[index];
+                this.showArticleModal(article);
+            });
+        });
+    }
+    
+    showEmptyArticlesState() {
+        const articlesList = document.getElementById('articles-list');
+        articlesList.innerHTML = `
+            <div class="empty-state">
+                <h3>No articles yet</h3>
+                <p>Add some RSS feeds to start reading articles!</p>
+                <button class="btn btn-primary" onclick="document.getElementById('hamburger-menu').click()">Add Your First Feed</button>
+            </div>
+        `;
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     showLoading(show) {
         const loading = document.getElementById('loading');
         if (show) {
@@ -361,6 +457,119 @@ class RatReader {
             this.showError('Network error. Please try again.');
         } finally {
             this.showLoading(false);
+        }
+    }
+
+    showArticleModal(article) {
+        const { title, description, link, feed_name: feedName, pub_date: pubDate } = article;
+        const date = new Date(pubDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Clean up the description content
+        const cleanDescription = this.cleanArticleContent(description);
+
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('article-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'article-modal';
+            modal.className = 'modal hidden';
+            modal.innerHTML = `
+                <div class="modal-content article-modal-content">
+                    <span class="close" id="close-article-modal">&times;</span>
+                    <div class="article-modal-header">
+                        <div class="article-modal-meta">
+                            <span class="article-modal-source"></span>
+                            <span class="article-modal-date"></span>
+                        </div>
+                        <h2 class="article-modal-title"></h2>
+                    </div>
+                    <div class="article-modal-body">
+                        <div class="article-modal-description"></div>
+                        <div class="article-modal-actions">
+                            <button class="btn btn-primary" id="article-modal-link">Go to full article</button>
+                            <button class="btn btn-secondary" id="article-modal-close">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add event listeners that don't depend on the article link
+            modal.querySelector('#close-article-modal').addEventListener('click', () => this.hideArticleModal());
+            modal.querySelector('#article-modal-close').addEventListener('click', () => this.hideArticleModal());
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'article-modal') {
+                    this.hideArticleModal();
+                }
+            });
+        }
+        
+        // Populate modal content
+        modal.querySelector('.article-modal-source').textContent = feedName;
+        modal.querySelector('.article-modal-date').textContent = date;
+        modal.querySelector('.article-modal-title').textContent = title;
+        modal.querySelector('.article-modal-description').innerHTML = cleanDescription;
+        
+        // Update the link button with the correct article link each time
+        const linkButton = modal.querySelector('#article-modal-link');
+        linkButton.onclick = () => window.open(link, '_blank');
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+    
+    cleanArticleContent(content) {
+        if (!content) return 'No description available.';
+        
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        
+        // Remove unwanted elements (like the footer attribution)
+        const unwantedSelectors = ['hr', 'small', '.wp-element-caption'];
+        unwantedSelectors.forEach(selector => {
+            const elements = tempDiv.querySelectorAll(selector);
+            elements.forEach(el => el.remove());
+        });
+        
+        // Get clean text content
+        let cleanText = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Remove extra whitespace and line breaks
+        cleanText = cleanText
+            .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+            .replace(/\n+/g, ' ')   // Replace line breaks with spaces
+            .trim();
+        
+        // Remove common RSS footer text patterns
+        cleanText = cleanText
+            .replace(/originally published on.*?family\./gi, '')
+            .replace(/You should get the newsletter\./gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        // If the cleaned text is too short, return a fallback
+        if (cleanText.length < 50) {
+            return 'Click "Go to full article" to read the complete content.';
+        }
+        
+        // Limit length and add ellipsis if needed
+        if (cleanText.length > 500) {
+            cleanText = cleanText.substring(0, 500).trim() + '...';
+        }
+        
+        return cleanText;
+    }
+
+    hideArticleModal() {
+        const modal = document.getElementById('article-modal');
+        if (modal) {
+            modal.classList.add('hidden');
         }
     }
 }
