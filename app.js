@@ -2,6 +2,11 @@
 class RatReader {
     constructor() {
         this.apiUrl = window.location.origin;
+        
+        // Environment detection for the correct path
+        const isProduction = window.location.hostname === 'hellodevrat.com';
+        this.basePath = isProduction ? '/ratReader' : '';
+        
         this.currentUser = null;
         this.authToken = localStorage.getItem('ratreader_token');
         
@@ -104,10 +109,10 @@ class RatReader {
         try {
             this.showLoading(true);
             
-            console.log('Making registration request to:', `${this.apiUrl}/api.php/register`);
+            console.log('Making registration request to:', `${this.apiUrl}${this.basePath}/api.php?action=register`);
             console.log('Request data:', { username, password: '***' });
             
-            const response = await fetch(`${this.apiUrl}/api.php/register`, {
+            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -152,7 +157,7 @@ class RatReader {
         try {
             this.showLoading(true);
             
-            const response = await fetch(`${this.apiUrl}/api.php/login`, {
+            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -185,7 +190,7 @@ class RatReader {
     
     async handleLogout() {
         try {
-            await fetch(`${this.apiUrl}/api.php/logout`, {
+            await fetch(`${this.apiUrl}${this.basePath}/api.php?action=logout`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.authToken}`
@@ -240,7 +245,7 @@ class RatReader {
         try {
             this.showLoading(true);
             
-            const response = await fetch(`${this.apiUrl}/api.php/live-articles`, {
+            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=live-articles`, {
                 headers: {
                     'Authorization': `Bearer ${this.authToken}`
                 }
@@ -432,7 +437,7 @@ class RatReader {
         try {
             this.showLoading(true);
             
-            const response = await fetch(`${this.apiUrl}/api.php/feeds`, {
+            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=feeds`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -449,7 +454,7 @@ class RatReader {
             if (data.success) {
                 this.hideAddFeedModal();
                 this.showSuccess('RSS feed added successfully!');
-                // TODO: Refresh feed list
+                this.loadLiveArticles(); // Refresh to show new feed articles
             } else {
                 this.showError(data.error || 'Failed to add feed');
             }

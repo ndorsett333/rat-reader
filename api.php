@@ -20,18 +20,25 @@ class RatReaderAPI {
     
     public function handleRequest() {
         $method = $_SERVER['REQUEST_METHOD'];
-        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $pathParts = explode('/', trim($path, '/'));
         
-        // Remove 'api.php' from path if present
-        if (end($pathParts) === 'api.php') {
-            array_pop($pathParts);
+        // Get the action from query parameter instead of path
+        $action = $_GET['action'] ?? '';
+        
+        // If no action in query params, try to parse from path (backward compatibility)
+        if (!$action) {
+            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $pathParts = explode('/', trim($path, '/'));
+            
+            // Remove 'api.php' from path if present
+            if (end($pathParts) === 'api.php') {
+                array_pop($pathParts);
+            }
+            
+            $action = $pathParts[count($pathParts) - 1] ?? '';
         }
         
-        $endpoint = $pathParts[count($pathParts) - 1] ?? '';
-        
         try {
-            switch ($endpoint) {
+            switch ($action) {
                 case 'register':
                     if ($method === 'POST') return $this->register();
                     break;
