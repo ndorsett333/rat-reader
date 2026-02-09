@@ -150,7 +150,7 @@ class RatReaderAPI {
         $stmt->execute([$userId]);
         $feeds = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $this->sendResponse(['feeds' => $feeds]);
+        $this->sendResponse(['success' => true, 'feeds' => $feeds]);
     }
     
     private function addFeed() {
@@ -224,9 +224,19 @@ class RatReaderAPI {
         $userId = $this->authenticateRequest();
         if (!$userId) return;
         
-        // Get user's active feeds
-        $stmt = $this->db->prepare("SELECT id, name, url FROM feeds WHERE user_id = ? AND is_active = 1");
-        $stmt->execute([$userId]);
+        $feedId = $_GET['feed_id'] ?? null;
+        
+        // Get user's active feeds (optionally filtered by feed_id)
+        $query = "SELECT id, name, url FROM feeds WHERE user_id = ? AND is_active = 1";
+        $params = [$userId];
+        
+        if ($feedId) {
+            $query .= " AND id = ?";
+            $params[] = $feedId;
+        }
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
         $feeds = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $allArticles = [];
@@ -250,11 +260,33 @@ class RatReaderAPI {
     }
     
     private function fetchLiveArticles($url, $feedName) {
-        $content = @file_get_contents($url);
-        if (!$content) return false;
+        // Create context with proper headers and timeout for mobile compatibility
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => [
+                    'User-Agent: Mozilla/5.0 (compatible; RatReader/1.0)',
+                    'Accept: application/rss+xml, application/xml, text/xml, application/atom+xml'
+                ],
+                'timeout' => 30, // 30 second timeout
+                'ignore_errors' => false
+            ]
+        ]);
+        
+        $content = @file_get_contents($url, false, $context);
+        if (!$content) {
+            error_log("Failed to fetch RSS feed: $url - " . json_encode(error_get_last()));
+            return false;
+        }
+        
+        // Clean up any encoding issues that might cause parsing problems
+        $content = trim($content);
         
         $xml = simplexml_load_string($content);
-        if (!$xml) return false;
+        if (!$xml) {
+            error_log("Failed to parse XML for feed: $url");
+            return false;
+        }
         
         $articles = [];
         $items = $xml->channel->item ?? $xml->entry ?? [];

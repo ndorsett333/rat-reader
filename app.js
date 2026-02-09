@@ -13,9 +13,14 @@ class RatReader {
         this.init();
     }
     
-    init() {
+    async init() {
+        this.checkAuth();
         this.setupEventListeners();
-        this.checkAuthStatus();
+        
+        if (this.authToken) {
+            await this.loadUserFeeds(); // Load feeds first
+            this.loadLiveArticles();
+        }
     }
     
     setupEventListeners() {
@@ -49,6 +54,9 @@ class RatReader {
         
         // Refresh functionality
         document.getElementById('refresh-feeds').addEventListener('click', () => this.loadLiveArticles());
+        
+        // Feed filter functionality
+        document.getElementById('feed-filter').addEventListener('change', (e) => this.handleFeedFilter(e));
         
         // Close modal when clicking outside
         document.getElementById('auth-modal').addEventListener('click', (e) => {
@@ -211,6 +219,14 @@ class RatReader {
         this.showSuccess('Logged out successfully');
     }
     
+    checkAuth() {
+        if (this.authToken) {
+            this.updateUIForLoggedInUser();
+        } else {
+            this.updateUIForLoggedOutUser();
+        }
+    }
+    
     checkAuthStatus() {
         if (this.authToken) {
             // TODO: Validate token with server
@@ -230,8 +246,10 @@ class RatReader {
             document.getElementById('username').textContent = this.currentUser.username;
         }
         
-        // Load live articles when dashboard is shown
-        this.loadLiveArticles();
+        // Load feeds for the dropdown and then load articles
+        this.loadUserFeeds().then(() => {
+            this.loadLiveArticles();
+        });
     }
     
     updateUIForLoggedOutUser() {
@@ -245,7 +263,17 @@ class RatReader {
         try {
             this.showLoading(true);
             
-            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=live-articles`, {
+            // Get selected feed filter
+            const feedFilter = document.getElementById('feed-filter');
+            const selectedFeedId = feedFilter.value;
+            
+            // Build URL with filter if selected
+            let url = `${this.apiUrl}${this.basePath}/api.php?action=live-articles`;
+            if (selectedFeedId && selectedFeedId !== 'all') {
+                url += `&feed_id=${selectedFeedId}`;
+            }
+            
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${this.authToken}`
                 }
@@ -265,7 +293,58 @@ class RatReader {
             this.showLoading(false);
         }
     }
-    
+
+    async loadUserFeeds() {
+        try {
+            const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=feeds`, {
+                headers: {
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.feeds) {
+                this.populateFeedFilter(data.feeds);
+                this.userFeeds = data.feeds; // Store for later use
+            } else {
+                console.log('No feeds found or error loading feeds');
+                this.populateFeedFilter([]);
+            }
+        } catch (error) {
+            console.error('Error loading user feeds:', error);
+            this.populateFeedFilter([]);
+        }
+    }
+
+    populateFeedFilter(feeds) {
+        const feedFilter = document.getElementById('feed-filter');
+        
+        // Clear existing options except "All feeds"
+        feedFilter.innerHTML = '<option value="all">All feeds</option>';
+        
+        // Add each feed as an option
+        feeds.forEach(feed => {
+            const option = document.createElement('option');
+            option.value = feed.id;
+            option.textContent = feed.name || feed.url;
+            feedFilter.appendChild(option);
+        });
+        
+        // Show or hide the filter based on whether there are feeds
+        const filterContainer = feedFilter.parentElement;
+        if (feeds.length > 0) {
+            filterContainer.style.display = 'block';
+        } else {
+            filterContainer.style.display = 'none';
+        }
+    }
+
+    handleFeedFilter(e) {
+        // When feed filter changes, reload articles with the new filter
+        this.loadLiveArticles();
+    }
+
     displayArticles(articles) {
         const articlesList = document.getElementById('articles-list');
         
@@ -577,11 +656,54 @@ class RatReader {
             modal.classList.add('hidden');
         }
     }
+
+    // Back to top functionality
+    initBackToTop() {
+        const backToTopButton = document.getElementById('back-to-top');
+        
+        // Show/hide button based on scroll position
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                backToTopButton.classList.remove('hidden');
+            } else {
+                backToTopButton.classList.add('hidden');
+            }
+        };
+        
+        // Scroll to top when button is clicked
+        const scrollToTop = () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        };
+        
+        // Add event listeners
+        window.addEventListener('scroll', handleScroll);
+        backToTopButton.addEventListener('click', scrollToTop);
+        
+        // Throttle scroll events for better performance
+        let ticking = false;
+        const throttledScroll = () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    handleScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+        
+        window.removeEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', throttledScroll);
+    }
 }
 
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.ratReader = new RatReader();
+    // Initialize back to top button
+    window.ratReader.initBackToTop();
 });
 
 // Global function for the welcome button

@@ -445,7 +445,7 @@ body {
 
 .add-feed-form input:focus {
     outline: none;
-    border-color: var(--deep-teal);
+    border-color: var (--deep-teal);
 }
 
 .form-actions {
@@ -746,4 +746,110 @@ body {
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
     line-height: 1.6;
+}
+
+/* Back to Top Button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 50px;
+    height: 50px;
+    background-color: var(--deep-teal);
+    color: var(--white);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(82, 121, 111, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+}
+
+.back-to-top:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    background-color: var(--muted-teal);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(82, 121, 111, 0.4);
+}
+
+.back-to-top:active {
+    transform: translateY(-1px);
+}
+
+.back-to-top svg {
+    transition: transform 0.3s ease;
+}
+
+.back-to-top:hover svg {
+    transform: translateY(-2px);
+}
+
+/* Back to Top Button - Mobile */
+@media (max-width: 768px) {
+    .back-to-top {
+        bottom: 1rem;
+        right: 1rem;
+        width: 45px;
+        height: 45px;
+    }
+    
+    .back-to-top svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+#back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--charcoal-blue);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(47, 62, 70, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#back-to-top:hover {
+    background-color: var(--dark-slate-grey);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(47, 62, 70, 0.6);
+}
+
+#back-to-top.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    #back-to-top {
+        bottom: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+    }
+    
+    #back-to-top::before {
+        font-size: 18px;
+    }
 }
