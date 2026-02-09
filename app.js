@@ -553,8 +553,8 @@ class RatReader {
             minute: '2-digit'
         });
 
-        // Clean up the description content
-        const cleanDescription = this.cleanArticleContent(description);
+        // For the modal, show the full content without cleaning/truncating
+        const fullDescription = description || 'No description available.';
 
         // Create modal if it doesn't exist
         let modal = document.getElementById('article-modal');
@@ -597,7 +597,7 @@ class RatReader {
         modal.querySelector('.article-modal-source').textContent = feedName;
         modal.querySelector('.article-modal-date').textContent = date;
         modal.querySelector('.article-modal-title').textContent = title;
-        modal.querySelector('.article-modal-description').innerHTML = cleanDescription;
+        modal.querySelector('.article-modal-description').innerHTML = fullDescription;
         
         // Update the link button with the correct article link each time
         const linkButton = modal.querySelector('#article-modal-link');

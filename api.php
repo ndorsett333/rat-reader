@@ -294,15 +294,8 @@ class RatReaderAPI {
         foreach ($items as $item) {
             $title = (string)($item->title ?? '');
             
-            // Try to get full content first, fall back to description
-            $description = '';
-            if (isset($item->children('http://purl.org/rss/1.0/modules/content/')->encoded)) {
-                $description = (string)$item->children('http://purl.org/rss/1.0/modules/content/')->encoded;
-            } elseif (isset($item->description)) {
-                $description = (string)$item->description;
-            } elseif (isset($item->summary)) {
-                $description = (string)$item->summary;
-            }
+            // Try to get full content from various possible sources
+            $description = $this->extractFullContent($item);
             
             $link = (string)($item->link ?? $item->id ?? '');
             $pubDate = (string)($item->pubDate ?? $item->published ?? '');
@@ -319,6 +312,56 @@ class RatReaderAPI {
         }
         
         return $articles;
+    }
+
+    private function extractFullContent($item) {
+        $content = '';
+        
+        // Try various content fields in order of preference (full content to summary)
+        
+        // 1. Try content:encoded (full article content)
+        if (isset($item->children('http://purl.org/rss/1.0/modules/content/')->encoded)) {
+            $content = (string)$item->children('http://purl.org/rss/1.0/modules/content/')->encoded;
+        }
+        // 2. Try content:encoded with different namespace
+        elseif (isset($item->children('content', true)->encoded)) {
+            $content = (string)$item->children('content', true)->encoded;
+        }
+        // 3. Try Atom content
+        elseif (isset($item->content)) {
+            $content = (string)$item->content;
+        }
+        // 4. Try description (may be full content in some feeds)
+        elseif (isset($item->description)) {
+            $content = (string)$item->description;
+        }
+        // 5. Try summary
+        elseif (isset($item->summary)) {
+            $content = (string)$item->summary;
+        }
+        // 6. Try excerpt
+        elseif (isset($item->children('http://wordpress.org/export/1.2/excerpt/')->encoded)) {
+            $content = (string)$item->children('http://wordpress.org/export/1.2/excerpt/')->encoded;
+        }
+        
+        // Clean up the content
+        $content = $this->cleanContent($content);
+        
+        return $content;
+    }
+
+    private function cleanContent($content) {
+        // Remove CDATA wrapping if present
+        $content = preg_replace('/^<!\[CDATA\[(.*?)\]\]>$/s', '$1', $content);
+        
+        // Decode HTML entities
+        $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Clean up extra whitespace but preserve paragraphs
+        $content = preg_replace('/\n\s*\n/', "\n\n", $content);
+        $content = trim($content);
+        
+        return $content;
     }
 
     private function createSession($userId) {
@@ -372,17 +415,39 @@ class RatReaderAPI {
     }
     
     private function fetchFeedArticles($feedId, $url) {
-        $content = @file_get_contents($url);
-        if (!$content) return false;
+        // Create context with proper headers and timeout for mobile compatibility
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => [
+                    'User-Agent: Mozilla/5.0 (compatible; RatReader/1.0)',
+                    'Accept: application/rss+xml, application/xml, text/xml, application/atom+xml'
+                ],
+                'timeout' => 30,
+                'ignore_errors' => false
+            ]
+        ]);
+        
+        $content = @file_get_contents($url, false, $context);
+        if (!$content) {
+            error_log("Failed to fetch RSS feed: $url - " . json_encode(error_get_last()));
+            return false;
+        }
         
         $xml = simplexml_load_string($content);
-        if (!$xml) return false;
+        if (!$xml) {
+            error_log("Failed to parse XML for feed: $url");
+            return false;
+        }
         
         $items = $xml->channel->item ?? $xml->entry ?? [];
         
         foreach ($items as $item) {
             $title = (string)($item->title ?? '');
-            $description = (string)($item->description ?? $item->summary ?? '');
+            
+            // Use the same full content extraction as live articles
+            $description = $this->extractFullContent($item);
+            
             $link = (string)($item->link ?? $item->id ?? '');
             $pubDate = (string)($item->pubDate ?? $item->published ?? '');
             
