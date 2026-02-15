@@ -313,12 +313,17 @@ body {
     position: fixed;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(47, 62, 70, 0.8);
     display: flex;
-    align-items: center;
+    /* Align to the top so taller modals remain visible on small screens */
+    align-items: flex-start;
     justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
     z-index: 1000;
 }
 
@@ -330,6 +335,23 @@ body {
     max-width: 400px;
     width: 90%;
     position: relative;
+    box-sizing: border-box;
+    /* Ensure modal content doesn't overflow the viewport; allow internal scrolling */
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+}
+
+/* Make large modals take up more horizontal space on larger screens */
+.modal.modal-large .modal-content {
+    max-width: 1100px;
+    width: 95%;
+}
+
+@media (min-width: 1280px) {
+    .modal.modal-large .modal-content {
+        max-width: 1200px;
+        width: 90%;
+    }
 }
 
 .close {

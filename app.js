@@ -51,6 +51,20 @@ class RatReader {
         document.getElementById('close-feed-modal').addEventListener('click', () => this.hideAddFeedModal());
         document.getElementById('cancel-add-feed').addEventListener('click', () => this.hideAddFeedModal());
         document.getElementById('add-feed-form').addEventListener('submit', (e) => this.handleAddFeed(e));
+        // Manage Feeds
+        const manageBtn = document.getElementById('manage-feeds-btn');
+        if (manageBtn) manageBtn.addEventListener('click', () => this.showManageFeedsModal());
+        const closeManageModalBtn = document.getElementById('close-manage-feeds-modal');
+        if (closeManageModalBtn) closeManageModalBtn.addEventListener('click', () => this.hideManageFeedsModal());
+        const closeManageFooterBtn = document.getElementById('close-manage-feeds');
+        if (closeManageFooterBtn) closeManageFooterBtn.addEventListener('click', () => this.hideManageFeedsModal());
+        const addNewFromManageBtn = document.getElementById('add-new-feed-from-manage');
+        if (addNewFromManageBtn) addNewFromManageBtn.addEventListener('click', () => {
+            // Close manage modal and open add feed modal
+            this.hideManageFeedsModal();
+            // Small timeout to ensure DOM updates don't clash
+            setTimeout(() => this.showAddFeedModal(), 100);
+        });
         
         // Refresh functionality
         document.getElementById('refresh-feeds').addEventListener('click', () => this.loadLiveArticles());
@@ -505,6 +519,70 @@ class RatReader {
     hideAddFeedModal() {
         document.getElementById('add-feed-modal').classList.add('hidden');
         document.getElementById('add-feed-form').reset();
+    }
+
+    showManageFeedsModal() {
+        this.closeSidebar();
+        this.loadManageFeeds();
+        const modal = document.getElementById('manage-feeds-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideManageFeedsModal() {
+        const modal = document.getElementById('manage-feeds-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = '';
+        }
+    }
+
+    loadManageFeeds() {
+        const list = document.getElementById('manage-feeds-list');
+
+        if (!list) return;
+
+        const feeds = this.userFeeds || [];
+
+        if (feeds.length === 0) {
+            list.innerHTML = `<div class="empty-state"><p>No feeds added yet. Add your first RSS feed!</p></div>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        feeds.forEach(feed => {
+            const item = document.createElement('div');
+            item.className = 'feed-item';
+            item.innerHTML = `
+                <div class="feed-icon">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M4 11a9 9 0 0 1 9 9'/%3E%3Cpath d='M4 4a16 16 0 0 1 16 16'/%3E%3Ccircle cx='5' cy='19' r='1'/%3E%3C/svg%3E" alt="RSS Icon">
+                </div>
+                <div class="feed-info">
+                    <h4 class="feed-title">${this.escapeHtml(feed.name || feed.url)}</h4>
+                    <p class="feed-url">${this.escapeHtml(feed.url)}</p>
+                    <div class="feed-meta">
+                        <span class="feed-status ${feed.is_active ? 'active' : 'inactive'}">${feed.is_active ? 'Active' : 'Disabled'}</span>
+                        <span class="feed-articles">— articles</span>
+                        <span class="feed-updated">${feed.last_fetched ? 'Updated ' + feed.last_fetched : 'Never fetched'}</span>
+                    </div>
+                </div>
+                <div class="feed-actions">
+                    <button class="btn btn-secondary btn-small remove-feed-btn" data-feed-id="${feed.id}">Remove</button>
+                </div>
+            `;
+
+            // Attach non-functional remove handler (for now)
+            item.querySelectorAll('.remove-feed-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    console.log('Remove feed clicked for id:', btn.dataset.feedId);
+                    this.showNotification('Remove not implemented yet', 'error');
+                });
+            });
+
+            list.appendChild(item);
+        });
     }
     
     async handleAddFeed(e) {

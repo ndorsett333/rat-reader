@@ -166,6 +166,34 @@
             </div>
         </div>
 
+        <!-- Manage Feeds Modal -->
+        <div id="manage-feeds-modal" class="modal modal-large hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Manage Feeds</h2>
+                    <span class="close" id="close-manage-feeds-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="feeds-list-container">
+                        <div class="feeds-list-header">
+                            <h3>Your Feeds</h3>
+                            <div class="feeds-actions">
+                                <button class="btn btn-secondary btn-small" id="refresh-all-feeds">🔄 Refresh All</button>
+                            </div>
+                        </div>
+
+                        <div class="feeds-list" id="manage-feeds-list">
+                            <!-- Feeds will be injected here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="close-manage-feeds">Close</button>
+                    <button class="btn btn-primary" id="add-new-feed-from-manage">Add New Feed</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Indicator -->
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
