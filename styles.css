@@ -13,6 +13,22 @@
     --success-green: #27ae60;
 }
 
+/* Dark mode overrides. Apply by adding `darkmode` class to the highest element (body/html).
+   Keep the original variable names so all existing styles continue to work. */
+.darkmode,
+body.darkmode,
+html.darkmode {
+    --white: #2a2f2f;        /* surface backgrounds (was white) */
+    --light-grey: #161a1a;   /* page background (was light) */
+    --charcoal-blue: #ffffff;/* primary text color (was dark) */
+    --dark-slate-grey: #cbd5d3;/* secondary text */
+    --ash-grey: #7a8b86;     /* muted borders */
+    --muted-teal: #84a98c;   /* keep as-is */
+    --deep-teal: #4b8a78;    /* slightly adjusted for contrast */
+    --error-red: #f44336;
+    --success-green: #27ae60;
+}
+
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -35,8 +51,8 @@ body {
 
 /* Header */
 .header {
-    background-color: var(--charcoal-blue);
-    color: var(--white);
+    background-color: #2f3e46;
+    color: #ffffff;
     padding: 1rem 0;
     box-shadow: 0 2px 4px rgba(47, 62, 70, 0.1);
 }
@@ -131,8 +147,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--charcoal-blue);
-    color: var(--white);
+    background-color: #2f3e46;
+    color: #ffffff;
 }
 
 .sidebar-header h3 {
