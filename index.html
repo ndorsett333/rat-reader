@@ -194,6 +194,28 @@
             </div>
         </div>
 
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal modal-large hidden">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <span class="close" id="close-settings-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-row">
+                        <label for="settings-dark-toggle" style="display:flex;align-items:center;gap:12px;">
+                            <span>Dark Mode</span>
+                            <input type="checkbox" id="settings-dark-toggle" />
+                        </label>
+                        <p style="color:var(--dark-slate-grey);margin-top:10px;">Toggle between dark and light theme. (Light will remove the <code>darkmode</code> class on the page.)</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="close-settings">Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Indicator -->
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>

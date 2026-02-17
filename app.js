@@ -16,6 +16,11 @@ class RatReader {
     async init() {
         this.checkAuth();
         this.setupEventListeners();
+        // Sync settings UI (theme toggle) with current body class
+        const themeToggle = document.getElementById('settings-dark-toggle');
+        if (themeToggle) {
+            themeToggle.checked = document.body.classList.contains('darkmode');
+        }
         
         if (this.authToken) {
             await this.loadUserFeeds(); // Load feeds first
@@ -64,6 +69,23 @@ class RatReader {
             this.hideManageFeedsModal();
             // Small timeout to ensure DOM updates don't clash
             setTimeout(() => this.showAddFeedModal(), 100);
+        });
+        // Settings modal handlers
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) settingsBtn.addEventListener('click', () => this.showSettingsModal());
+        const closeSettingsModalBtn = document.getElementById('close-settings-modal');
+        if (closeSettingsModalBtn) closeSettingsModalBtn.addEventListener('click', () => this.hideSettingsModal());
+        const closeSettingsFooterBtn = document.getElementById('close-settings');
+        if (closeSettingsFooterBtn) closeSettingsFooterBtn.addEventListener('click', () => this.hideSettingsModal());
+        const themeToggle = document.getElementById('settings-dark-toggle');
+        if (themeToggle) themeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.body.classList.add('darkmode');
+                this.showSuccess('Dark mode enabled');
+            } else {
+                document.body.classList.remove('darkmode');
+                this.showSuccess('Light mode enabled');
+            }
         });
         
         // Refresh functionality
@@ -533,6 +555,26 @@ class RatReader {
 
     hideManageFeedsModal() {
         const modal = document.getElementById('manage-feeds-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = '';
+        }
+    }
+
+    showSettingsModal() {
+        this.closeSidebar();
+        const modal = document.getElementById('settings-modal');
+        // Ensure toggle matches current mode
+        const themeToggle = document.getElementById('settings-dark-toggle');
+        if (themeToggle) themeToggle.checked = document.body.classList.contains('darkmode');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+    }
+
+    hideSettingsModal() {
+        const modal = document.getElementById('settings-modal');
         if (modal) {
             modal.classList.add('hidden');
             modal.style.display = '';
