@@ -51,6 +51,7 @@ class RatReaderAPI {
                 case 'feeds':
                     if ($method === 'GET') return $this->getFeeds();
                     if ($method === 'POST') return $this->addFeed();
+                    if ($method === 'DELETE') return $this->deleteFeed();
                     break;
                 case 'articles':
                     if ($method === 'GET') return $this->getArticles();
@@ -464,6 +465,33 @@ class RatReaderAPI {
         $stmt->execute([$feedId]);
         
         return true;
+    }
+
+    private function deleteFeed() {
+        $userId = $this->authenticateRequest();
+        if (!$userId) return;
+
+        $feedId = $_GET['id'] ?? null;
+        if (!$feedId) {
+            $this->sendResponse(['error' => 'Feed id required'], 400);
+            return;
+        }
+
+        // Ensure the feed belongs to the user
+        $stmt = $this->db->prepare("SELECT id FROM feeds WHERE id = ? AND user_id = ?");
+        $stmt->execute([$feedId, $userId]);
+        $feed = $stmt->fetch();
+
+        if (!$feed) {
+            $this->sendResponse(['error' => 'Feed not found or not owned by user'], 404);
+            return;
+        }
+
+        // Delete the feed (articles will cascade)
+        $stmt = $this->db->prepare("DELETE FROM feeds WHERE id = ? AND user_id = ?");
+        $stmt->execute([$feedId, $userId]);
+
+        $this->sendResponse(['success' => true]);
     }
     
     private function sendResponse($data, $statusCode = 200) {

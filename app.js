@@ -612,14 +612,66 @@ class RatReader {
                 </div>
                 <div class="feed-actions">
                     <button class="btn btn-secondary btn-small remove-feed-btn" data-feed-id="${feed.id}">Remove</button>
+                    <button class="btn btn-danger btn-small confirm-remove-btn hidden" data-feed-id="${feed.id}">Remove For Real?</button>
                 </div>
             `;
 
             // Attach non-functional remove handler (for now)
+            // Show confirm button when initial remove is clicked
             item.querySelectorAll('.remove-feed-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    console.log('Remove feed clicked for id:', btn.dataset.feedId);
-                    this.showNotification('Remove not implemented yet', 'error');
+                btn.addEventListener('click', (e) => {
+                    const id = btn.dataset.feedId;
+                    const confirmBtn = item.querySelector(`.confirm-remove-btn[data-feed-id="${id}"]`);
+                    if (confirmBtn) {
+                        // Toggle visibility of confirm button
+                        confirmBtn.classList.remove('hidden');
+                        // Optionally focus it
+                        confirmBtn.focus();
+                    }
+                });
+            });
+
+            // Attach handler for the confirm-remove button to call API
+            item.querySelectorAll('.confirm-remove-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const feedId = btn.dataset.feedId;
+                    if (!feedId) return;
+
+                    // Disable buttons to prevent double clicks
+                    btn.disabled = true;
+                    const removeBtn = item.querySelector(`.remove-feed-btn[data-feed-id="${feedId}"]`);
+                    if (removeBtn) removeBtn.disabled = true;
+
+                    try {
+                        this.showLoading(true);
+                        const response = await fetch(`${this.apiUrl}${this.basePath}/api.php?action=feeds&id=${encodeURIComponent(feedId)}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${this.authToken}`
+                            }
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            // Remove from local userFeeds and refresh list
+                            this.userFeeds = (this.userFeeds || []).filter(f => String(f.id) !== String(feedId));
+                            this.showSuccess('Feed removed');
+                            this.loadManageFeeds();
+                            this.loadUserFeeds();
+                        } else {
+                            this.showError(data.error || 'Failed to remove feed');
+                            // Re-enable buttons
+                            btn.disabled = false;
+                            if (removeBtn) removeBtn.disabled = false;
+                        }
+                    } catch (err) {
+                        console.error('Error removing feed:', err);
+                        this.showError('Network error. Please try again.');
+                        btn.disabled = false;
+                        if (removeBtn) removeBtn.disabled = false;
+                    } finally {
+                        this.showLoading(false);
+                    }
                 });
             });
 
